@@ -10,7 +10,16 @@ public class CarController : MonoBehaviour
 
     public float forwardAccel = 8f, reverseAccel = 4f;
 
-    private float speedInput; 
+    private float speedInput;
+
+    public float turnStrength = 180f;
+    private float turnInput;
+
+    private bool grounded;
+
+    public Transform groundRay;
+    public LayerMask isGround;
+    public float groundRayLength = 2.25f;
     // Start is called before the first frame update
     void Start()
     {
@@ -29,11 +38,39 @@ public class CarController : MonoBehaviour
             speedInput = Input.GetAxis("Vertical") * reverseAccel;
         }
 
+
+
+        turnInput = Input.GetAxis("Horizontal");
+
+        if(grounded && Input.GetAxis("Vertical") != 0)
+        {
+            transform.rotation = Quaternion.Euler(transform.rotation.eulerAngles + new Vector3(0f, turnInput * turnStrength * Time.deltaTime * Mathf.Sign(speedInput) * (rb.velocity.magnitude / maxSpeed), 0f)); 
+        }
+
         transform.position = rb.position;
     }
 
     private void FixedUpdate()
     {
-        rb.AddForce(new Vector3(0f, 0f, speedInput));
+        grounded = false;
+
+        RaycastHit hit;
+
+        if(Physics.Raycast(groundRay.position, -transform.up, out hit, groundRayLength, isGround))
+        {
+            grounded = true; 
+        }
+
+
+        //accelerate
+        if (grounded)
+        {
+            rb.AddForce(transform.forward * speedInput * 1000f);
+        }
+
+        if(rb.velocity.magnitude > maxSpeed)
+        {
+            rb.velocity = rb.velocity.normalized * maxSpeed;
+        }
     }
 }
